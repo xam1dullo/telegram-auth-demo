@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { getBotToken } from 'nestjs-telegraf';
+import type { Telegraf } from 'telegraf';
 import cookieParser from 'cookie-parser';
 import cookieSession from 'cookie-session';
 import { dirname, join } from 'node:path';
@@ -47,9 +49,28 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // On Deno Deploy: register Telegram bot via webhook instead of polling.
+  const isServerless = !!process.env.DENO_DEPLOYMENT_ID;
+  if (isServerless) {
+    try {
+      const bot = app.get<Telegraf>(getBotToken());
+      const webhookPath = '/telegraf';
+      app.use(bot.webhookCallback(webhookPath));
+      await bot.telegram.setWebhook(`${appUrl}${webhookPath}`);
+      console.log(`[bot] webhook set: ${appUrl}${webhookPath}`);
+    } catch (e: any) {
+      console.error('[bot] webhook setup failed:', e?.message ?? e);
+    }
+  }
+
   await app.listen(port);
   console.log(`🚀 Application is running on: ${appUrl}`);
 }
+
+process.on('unhandledRejection', (err: any) => {
+  // Keep the process alive on non-fatal async errors (e.g. Telegraf polling 409).
+  console.error('[unhandledRejection]', err?.message ?? err);
+});
 
 bootstrap().catch((err) => {
   console.error('[boot] Fatal startup error:', err?.message ?? err);
