@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "dev": "deno run -A --watch main.ts",
+    "build": "deno compile -A main.ts"
+  },
+  "imports": {
+    "@nestjs/core": "npm:@nestjs/core@^10.0.0",
+    "@nestjs/common": "npm:@nestjs/common@^10.0.0"
+  },
+  "entry": "src/main.ts"
+}
