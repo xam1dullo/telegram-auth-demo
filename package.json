@@ -1,0 +1,40 @@
+{
+  "name": "telegram-auth",
+  "version": "1.0.0",
+  "description": "Telegram OIDC Login with NestJS + Telegraf",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "dev": "pkill -f 'nest start --watch' ; nest start --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/config": "^3.3.0",
+    "@nestjs/jwt": "^10.2.0",
+    "nestjs-telegraf": "^2.4.1",
+    "telegraf": "^4.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "jose": "^5.9.6",
+    "axios": "^1.7.9",
+    "cookie-parser": "^1.4.7",
+    "express-session": "^1.18.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.0",
+    "@nestjs/schematics": "^10.2.0",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/express-session": "^1.18.1",
+    "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.12.4"
+}

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Telegram Login Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #2AABEE, #229ED9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 36px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff, #a0c4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 15px;
+      margin-bottom: 36px;
+      line-height: 1.5;
+    }
+
+    .login-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #2AABEE, #229ED9);
+      color: white;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(42, 171, 238, 0.4);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .telegram-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .divider {
+      margin: 28px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .divider span {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+    }
+
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .feature-icon {
+      font-size: 18px;
+      width: 28px;
+      text-align: center;
+    }
+
+    /* User Profile Card */
+    .user-card {
+      display: none;
+      text-align: left;
+    }
+
+    .user-card.visible {
+      display: block;
+    }
+
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .user-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2AABEE, #229ED9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      overflow: hidden;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-info h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .user-info p {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .user-detail {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .detail-label {
+      color: rgba(255, 255, 255, 0.45);
+      width: 90px;
+      flex-shrink: 0;
+    }
+
+    .detail-value {
+      color: #ffffff;
+      font-weight: 500;
+      word-break: break-all;
+    }
+
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .logout-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .alert.visible {
+      display: block;
+    }
+
+    .loading {
+      display: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+    }
+
+    .loading.visible {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #2AABEE;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .tech-badge {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-nestjs  { background: rgba(234, 53, 75, 0.2);  color: #ea354b; border: 1px solid rgba(234, 53, 75, 0.3); }
+    .badge-telegraf { background: rgba(42, 171, 238, 0.2); color: #2AABEE; border: 1px solid rgba(42, 171, 238, 0.3); }
+    .badge-oidc    { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Login Section -->
+    <div id="loginSection">
+      <div class="logo">✈️</div>
+      <h1>Telegram Login</h1>
+      <p class="subtitle">
+        NestJS + Telegraf + OIDC bilan<br />Telegram orqali xavfsiz kirish
+      </p>
+
+      <div id="errorAlert" class="alert error"></div>
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <span>Yuklanmoqda...</span>
+      </div>
+
+      <a href="/auth/login" class="login-btn" id="loginBtn">
+        <svg class="telegram-icon" viewBox="0 0 24 24" fill="white">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.012 9.489c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.525 14.6l-2.948-.924c-.64-.203-.654-.64.136-.95l11.532-4.448c.533-.194 1.001.13.317.97z"/>
+        </svg>
+        Telegram orqali kirish
+      </a>
+
+      <div class="divider"><span>Nima uchun Telegram Login?</span></div>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">🔐</span>
+          <span>PKCE bilan xavfsiz OIDC autentifikatsiya</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">⚡</span>
+          <span>Bir necha bosmada tez kirish</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✅</span>
+          <span>Tasdiqlangan telefon raqami</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🤖</span>
+          <span>Bot orqali to'g'ridan-to'g'ri aloqa</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Section -->
+    <div id="userSection" class="user-card">
+      <div class="success-badge">
+        <span>✓</span>
+        <span>Muvaffaqiyatli kirildi</span>
+      </div>
+
+      <div class="user-header">
+        <div class="user-avatar" id="userAvatar">👤</div>
+        <div class="user-info">
+          <h2 id="userName">-</h2>
+          <p id="userUsername">-</p>
+        </div>
+      </div>
+
+      <div class="user-details">
+        <div class="user-detail">
+          <span class="detail-label">🆔 ID</span>
+          <span class="detail-value" id="userId">-</span>
+        </div>
+        <div class="user-detail" id="phoneRow" style="display:none">
+          <span class="detail-label">📞 Telefon</span>
+          <span class="detail-value" id="userPhone">-</span>
+        </div>
+      </div>
+
+      <a href="/auth/logout" class="logout-btn">
+        🚪 Chiqish
+      </a>
+    </div>
+
+    <div class="tech-badge">
+      <span class="badge badge-nestjs">NestJS</span>
+      <span class="badge badge-telegraf">Telegraf</span>
+      <span class="badge badge-oidc">OpenID Connect</span>
+    </div>
+
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('error')) {
+      const errorAlert = document.getElementById('errorAlert');
+      errorAlert.textContent = '❌ Xatolik: ' + params.get('error');
+      errorAlert.classList.add('visible');
+      window.history.replaceState({}, '', '/');
+    }
+
+    if (params.get('login') === 'success' || params.get('logout') !== 'success') {
+      checkAuth();
+    }
+
+    if (params.get('logout') === 'success') {
+      window.history.replaceState({}, '', '/');
+    }
+
+    async function checkAuth() {
+      const loading = document.getElementById('loading');
+      loading.classList.add('visible');
+
+      try {
+        const res = await fetch('/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          showUserProfile(data.user);
+        }
+      } catch (e) {
+        // Not authenticated – show login form
+      } finally {
+        loading.classList.remove('visible');
+        if (params.get('login') === 'success') {
+          window.history.replaceState({}, '', '/');
+        }
+      }
+    }
+
+    function showUserProfile(user) {
+      document.getElementById('loginSection').style.display = 'none';
+      const userSection = document.getElementById('userSection');
+      userSection.classList.add('visible');
+
+      document.getElementById('userName').textContent = user.name || 'Noma\'lum';
+      document.getElementById('userUsername').textContent =
+        user.username ? '@' + user.username : 'Username yo\'q';
+      document.getElementById('userId').textContent = user.id || '-';
+
+      if (user.phone) {
+        document.getElementById('phoneRow').style.display = 'flex';
+        document.getElementById('userPhone').textContent = user.phone;
+      }
+
+      if (user.picture) {
+        const avatarEl = document.getElementById('userAvatar');
+        avatarEl.innerHTML = '<img src="' + user.picture + '" alt="' + user.name + '" />';
+      }
+    }
+
+    // Check auth on page load
+    checkAuth();
+  </script>
+</body>
+</html>
