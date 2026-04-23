@@ -4,7 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
