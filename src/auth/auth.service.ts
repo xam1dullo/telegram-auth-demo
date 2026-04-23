@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export interface TelegramUser {
