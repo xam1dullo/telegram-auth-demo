@@ -1,23 +1,21 @@
 import {
   Controller,
   Get,
+  Post,
   Query,
   Req,
   Res,
-  Session,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService, TelegramUser } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 
-declare module 'express-session' {
-  interface SessionData {
-    state: string;
-    codeVerifier: string;
-    nonce: string;
-    user: TelegramUser;
-  }
+interface AuthSession {
+  state?: string;
+  codeVerifier?: string;
+  nonce?: string;
+  user?: TelegramUser;
 }
 
 @Controller('auth')
@@ -27,114 +25,92 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * GET /auth/login
-   * Initiates the Telegram OIDC login flow
-   */
   @Get('login')
-  login(@Session() session: Record<string, any>, @Res() res: Response) {
+  login(@Req() req: Request, @Res() res: Response) {
     const state = this.authService.generateState();
     const nonce = this.authService.generateNonce();
     const codeVerifier = this.authService.generateCodeVerifier();
     const codeChallenge = this.authService.generateCodeChallenge(codeVerifier);
 
-    // Save to session for later verification
+    const session = req.session as AuthSession;
     session.state = state;
     session.nonce = nonce;
     session.codeVerifier = codeVerifier;
 
-    const authUrl = this.authService.buildAuthUrl({
-      state,
-      codeChallenge,
-      nonce,
-    });
-
-    return res.redirect(authUrl);
+    return res.redirect(
+      this.authService.buildAuthUrl({ state, codeChallenge, nonce }),
+    );
   }
 
-  /**
-   * GET /auth/callback
-   * Handles Telegram's redirect after user authorization
-   */
   @Get('callback')
   async callback(
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Session() session: Record<string, any>,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     const appUrl = this.configService.get<string>('appUrl');
+    const session = req.session as AuthSession;
 
-    // Handle user denial
     if (error) {
       return res.redirect(`${appUrl}/?error=${encodeURIComponent(error)}`);
     }
 
-    // Validate state (CSRF protection)
     if (!state || state !== session.state) {
-      throw new UnauthorizedException('Invalid state parameter (CSRF check failed)');
+      return res.redirect(`${appUrl}/?error=invalid_state`);
     }
 
     if (!code) {
-      throw new UnauthorizedException('Missing authorization code');
+      return res.redirect(`${appUrl}/?error=missing_code`);
     }
 
-    const codeVerifier = session.codeVerifier;
+    const { codeVerifier, nonce } = session;
+    if (!codeVerifier || !nonce) {
+      return res.redirect(`${appUrl}/?error=session_expired`);
+    }
 
-    // Clear PKCE session data
-    delete session.state;
-    delete session.codeVerifier;
-    delete session.nonce;
+    session.state = undefined;
+    session.codeVerifier = undefined;
+    session.nonce = undefined;
 
-    // Exchange code for tokens
-    const tokens = await this.authService.exchangeCodeForTokens({
-      code,
-      codeVerifier,
-    });
-
-    // Validate and decode id_token
-    const user = await this.authService.validateIdToken(tokens.id_token);
-
-    // Save user to session
-    session.user = user;
-
-    return res.redirect(`${appUrl}/?login=success`);
+    try {
+      const tokens = await this.authService.exchangeCodeForTokens({
+        code,
+        codeVerifier,
+      });
+      const user = await this.authService.validateIdToken(tokens.id_token, nonce);
+      session.user = user;
+      return res.redirect(`${appUrl}/?login=success`);
+    } catch (e) {
+      return res.redirect(`${appUrl}/?error=${encodeURIComponent(e.message)}`);
+    }
   }
 
-  /**
-   * GET /auth/me
-   * Returns the currently authenticated user
-   */
   @Get('me')
-  me(@Session() session: Record<string, any>) {
+  me(@Req() req: Request) {
+    const session = req.session as AuthSession;
     if (!session.user) {
       throw new UnauthorizedException('Not authenticated');
     }
+    const u = session.user;
     return {
       success: true,
       user: {
-        id: session.user.id || session.user.sub,
-        name: session.user.name,
-        username: session.user.preferred_username,
-        picture: session.user.picture,
-        phone: session.user.phone_number,
+        sub: u.sub,
+        id: u.id ?? u.sub,
+        name: u.name,
+        username: u.preferred_username,
+        picture: u.picture,
+        phone: u.phone_number,
       },
     };
   }
 
-  /**
-   * GET /auth/logout
-   * Destroys the session and logs the user out
-   */
-  @Get('logout')
-  logout(
-    @Session() session: Record<string, any>,
-    @Res() res: Response,
-  ) {
+  @Post('logout')
+  logout(@Req() req: Request, @Res() res: Response) {
     const appUrl = this.configService.get<string>('appUrl');
-    session.destroy(() => {
-      res.redirect(`${appUrl}/?logout=success`);
-    });
+    (req as any).session = null;
+    return res.redirect(`${appUrl}/?logout=success`);
   }
 }

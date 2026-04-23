@@ -6,8 +6,8 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export interface TelegramUser {
   sub: string;
-  id: number;
-  name: string;
+  id?: number;
+  name?: string;
   preferred_username?: string;
   picture?: string;
   phone_number?: string;
@@ -15,59 +15,40 @@ export interface TelegramUser {
   aud: string;
   iat: number;
   exp: number;
+  nonce?: string;
 }
 
 @Injectable()
 export class AuthService {
-  private readonly TELEGRAM_AUTH_URL = 'https://oauth.telegram.org/auth';
-  private readonly TELEGRAM_TOKEN_URL = 'https://oauth.telegram.org/token';
-  private readonly TELEGRAM_JWKS_URL =
-    'https://oauth.telegram.org/.well-known/jwks.json';
+  private readonly TELEGRAM_ISSUER = 'https://oauth.telegram.org';
+  private readonly TELEGRAM_AUTH_URL = `${this.TELEGRAM_ISSUER}/auth`;
+  private readonly TELEGRAM_TOKEN_URL = `${this.TELEGRAM_ISSUER}/token`;
+  private readonly TELEGRAM_JWKS_URL = `${this.TELEGRAM_ISSUER}/.well-known/jwks.json`;
 
-  private readonly jwks = createRemoteJWKSet(
-    new URL(this.TELEGRAM_JWKS_URL),
-  );
+  private readonly jwks = createRemoteJWKSet(new URL(this.TELEGRAM_JWKS_URL));
 
   constructor(private configService: ConfigService) {}
 
-  /**
-   * PKCE: Generate code_verifier (random 64 bytes, base64url encoded)
-   */
   generateCodeVerifier(): string {
     return crypto.randomBytes(64).toString('base64url');
   }
 
-  /**
-   * PKCE: Generate code_challenge from code_verifier (SHA256 + base64url)
-   */
   generateCodeChallenge(codeVerifier: string): string {
-    return crypto
-      .createHash('sha256')
-      .update(codeVerifier)
-      .digest('base64url');
+    return crypto.createHash('sha256').update(codeVerifier).digest('base64url');
   }
 
-  /**
-   * Generate random state string for CSRF protection
-   */
   generateState(): string {
     return crypto.randomBytes(32).toString('hex');
   }
 
-  /**
-   * Generate nonce for replay attack protection
-   */
   generateNonce(): string {
     return crypto.randomBytes(16).toString('hex');
   }
 
-  /**
-   * Build the Telegram OIDC authorization URL
-   */
   buildAuthUrl(params: {
     state: string;
     codeChallenge: string;
-    nonce?: string;
+    nonce: string;
   }): string {
     const clientId = this.configService.get<string>('telegram.clientId');
     const appUrl = this.configService.get<string>('appUrl');
@@ -77,37 +58,26 @@ export class AuthService {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'openid profile',
+      scope: 'openid profile phone',
       state: params.state,
+      nonce: params.nonce,
       code_challenge: params.codeChallenge,
       code_challenge_method: 'S256',
     });
 
-    if (params.nonce) {
-      searchParams.append('nonce', params.nonce);
-    }
-
     return `${this.TELEGRAM_AUTH_URL}?${searchParams.toString()}`;
   }
 
-  /**
-   * Exchange authorization code for tokens
-   */
   async exchangeCodeForTokens(params: {
     code: string;
     codeVerifier: string;
   }): Promise<{ access_token: string; id_token: string; expires_in: number }> {
     const clientId = this.configService.get<string>('telegram.clientId');
-    const clientSecret = this.configService.get<string>(
-      'telegram.clientSecret',
-    );
+    const clientSecret = this.configService.get<string>('telegram.clientSecret');
     const appUrl = this.configService.get<string>('appUrl');
     const redirectUri = `${appUrl}/auth/callback`;
 
-    // Basic Auth: base64(client_id:client_secret)
-    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-      'base64',
-    );
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -117,27 +87,33 @@ export class AuthService {
       code_verifier: params.codeVerifier,
     });
 
-    const response = await axios.post(this.TELEGRAM_TOKEN_URL, body.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${credentials}`,
-      },
-    });
-
-    return response.data;
+    try {
+      const response = await axios.post(this.TELEGRAM_TOKEN_URL, body.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${credentials}`,
+        },
+        timeout: 10000,
+      });
+      return response.data;
+    } catch (err) {
+      const detail = err.response?.data?.error ?? err.message;
+      throw new UnauthorizedException(`Token exchange failed: ${detail}`);
+    }
   }
 
-  /**
-   * Validate and decode the id_token JWT
-   */
-  async validateIdToken(idToken: string): Promise<TelegramUser> {
+  async validateIdToken(idToken: string, expectedNonce: string): Promise<TelegramUser> {
     const clientId = this.configService.get<string>('telegram.clientId');
 
     try {
       const { payload } = await jwtVerify(idToken, this.jwks, {
-        issuer: 'https://oauth.telegram.org',
+        issuer: this.TELEGRAM_ISSUER,
         audience: clientId,
       });
+
+      if (!payload.nonce || payload.nonce !== expectedNonce) {
+        throw new Error('nonce mismatch');
+      }
 
       return payload as unknown as TelegramUser;
     } catch (error) {
