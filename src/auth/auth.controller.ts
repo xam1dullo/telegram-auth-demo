@@ -7,7 +7,7 @@ import {
   Session,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService, TelegramUser } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 
