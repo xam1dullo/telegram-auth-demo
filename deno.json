@@ -7,5 +7,10 @@
     "@nestjs/core": "npm:@nestjs/core@^10.0.0",
     "@nestjs/common": "npm:@nestjs/common@^10.0.0"
   },
-  "entry": "src/main.ts"
+  "entry": "src/main.ts",
+  "deploy": {
+    "org": "xam1dullo",
+    "app": "telegram-auth-demo"
+  }
 }
+
