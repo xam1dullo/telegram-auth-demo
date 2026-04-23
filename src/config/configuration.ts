@@ -18,7 +18,7 @@ function sessionSecret(): string {
 
 export default () => ({
   port: parseInt(process.env.PORT ?? '3000', 10),
-  appUrl: process.env.APP_URL ?? 'http://localhost:3000',
+  appUrl: (process.env.APP_URL ?? 'https://telegram-auth-demo.xam1dullo.deno.net').replace(/\/+$/, ''),
   telegram: {
     botToken: required('TELEGRAM_BOT_TOKEN'),
     clientId: required('TELEGRAM_CLIENT_ID'),
