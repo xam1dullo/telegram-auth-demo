@@ -3,6 +3,7 @@
     "dev": "deno run -A --watch src/main.ts"
   },
   "nodeModulesDir": "auto",
+  "unstable": ["sloppy-imports"],
   "entry": "src/main.ts",
   "deploy": {
     "org": "xam1dullo",
