@@ -1,15 +1,24 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import cookieSession from 'cookie-session';
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AppModule } from './app.module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function bootstrap() {
+  console.log('[boot] env check:', {
+    APP_URL: !!process.env.APP_URL,
+    PORT: process.env.PORT || 3000,
+    TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CLIENT_ID: !!process.env.TELEGRAM_CLIENT_ID,
+    TELEGRAM_CLIENT_SECRET: !!process.env.TELEGRAM_CLIENT_SECRET,
+    SESSION_SECRET: !!process.env.SESSION_SECRET || "sasmasdlamsdkamlskdnl"
+  });
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
@@ -41,4 +50,9 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Application is running on: ${appUrl}`);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('[boot] Fatal startup error:', err?.message ?? err);
+  console.error(err?.stack);
+  process.exit(1);
+});
